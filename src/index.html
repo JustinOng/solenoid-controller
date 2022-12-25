@@ -1,60 +1,131 @@
 <html>
   <head>
     <style>
-      #display-table td {
-        width: 64px;
-        height: 64px;
+      .display-table td {
+        width: 48px;
+        height: 48px;
         text-align: center;
+        font-size: 12;
         font-family: Arial, Helvetica, sans-serif;
         font-weight: bold;
         -webkit-text-stroke: 0.5px black;
         -webkit-text-fill-color: white;
       }
+
+      #transform-config-container > div {
+        width: 33%;
+        display: flex;
+        margin-right: 8px;
+      }
+
+      #transform-config-container input[type="text"] {
+        flex-grow: 1;
+      }
     </style>
     <script>
+      const HOST = localStorage.getItem("host") || "";
+
       async function render() {
-        const sensor_url =
-          (localStorage.getItem("host") || "") + "/sensor?sensor=0";
-        const data = await (await fetch(sensor_url)).json();
-        const cells = document.querySelectorAll("#display-table td");
-        const status = data.shift();
+        for (let id = 0; id < 3; id++) {
+          const sensor_url = HOST + `/sensor?sensor=${id}`;
+          const data = await (await fetch(sensor_url)).json();
 
-        console.log(status, data);
+          const status = data.shift();
+          const STATUS_MAP = {
+            1: "Initializing",
+            2: "Initialization failed",
+            3: "Active",
+            4: "Communication Timeout",
+          };
 
-        const STATUS_MAP = {
-          1: "Initializing",
-          2: "Initialization failed",
-          3: "Active",
-          4: "Communication Timeout",
-        };
+          document.querySelector("#status").innerText =
+            STATUS_MAP[status] || "ERROR";
 
-        document.querySelector("#status").innerText = STATUS_MAP[status];
+          const cells = document.querySelectorAll(`#display-table${id} td`);
+          for (const [i, zone] of data.entries()) {
+            const [target_status, distance] = zone;
+            cells[i].innerHTML = `${i}<br/>${distance}<br/>(${target_status})`;
 
-        for (const [i, zone] of data.entries()) {
-          const [target_status, distance] = zone;
-          cells[i].innerHTML = `${distance}<br/>(${target_status})`;
+            const MAX_DISTANCE = 3000;
+            const c = (distance / MAX_DISTANCE) * 255;
 
-          const MAX_DISTANCE = 3000;
-          const c = (distance / MAX_DISTANCE) * 255;
-
-          cells[i].style.backgroundColor = `rgb(${c}, ${c}, ${c})`;
+            cells[i].style.backgroundColor = `rgb(${c}, ${c}, ${c})`;
+          }
         }
       }
 
-      window.onload = () => {
-        document.querySelector("#display-table tbody").innerHTML +=
-          "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>".repeat(
-            8
-          );
+      window.onload = async () => {
+        for (let id = 0; id < 3; id++) {
+          document.querySelector(`#display-table${id} tbody`).innerHTML +=
+            "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>".repeat(
+              8
+            );
+
+          const res = await fetch(HOST + `/config/transform?id=transform${id}`);
+          const data = await res.text();
+          document.querySelector(`#transform${id}`).value = data;
+          document.querySelector(`#display-table${id}`).style.transform = data;
+        }
       };
+
+      function update_transform(id) {
+        const val = document.querySelector(`#transform${id}`).value;
+        document.querySelector(`#display-table${id}`).style.transform = val;
+      }
+
+      function save_transform(id) {
+        const val = document.querySelector(`#transform${id}`).value;
+        fetch(HOST + `/config/transform?id=transform${id}`, {
+          method: "POST",
+          body: `value=${val}`,
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        });
+      }
 
       setInterval(render, 200);
     </script>
   </head>
   <body>
     Status: <span id="status"></span>
-    <table id="display-table">
+    <table id="display-table0" class="display-table">
       <tbody></tbody>
     </table>
+    <table id="display-table1" class="display-table">
+      <tbody></tbody>
+    </table>
+    <table id="display-table2" class="display-table">
+      <tbody></tbody>
+    </table>
+    <div
+      style="display: flex; flex-direction: row"
+      id="transform-config-container"
+    >
+      <div>
+        transform0:
+        <input
+          id="transform0"
+          type="text"
+          onkeyup="update_transform(0)"
+        /><input type="button" value="S" onclick="save_transform(0)" />
+      </div>
+      <div>
+        transform1:
+        <input
+          id="transform1"
+          type="text"
+          onkeyup="update_transform(1)"
+        /><input type="button" value="S" onclick="save_transform(1)" />
+      </div>
+      <div>
+        transform2:
+        <input
+          id="transform2"
+          type="text"
+          onkeyup="update_transform(2)"
+        /><input type="button" value="S" onclick="save_transform(2)" />
+      </div>
+    </div>
   </body>
 </html>

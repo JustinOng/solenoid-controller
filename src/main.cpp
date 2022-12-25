@@ -88,6 +88,53 @@ void setup() {
     request->send(response);
   });
 
+  server.on("/config/transform", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("id")) {
+      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "missing id");
+      response->addHeader("Access-Control-Allow-Origin", "*");
+      request->send(response);
+      return;
+    }
+    const char *raw_id = request->getParam("id")->value().c_str();
+
+    int id;
+    if (sscanf(raw_id, "transform%d", &id) != 1) {
+      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "bad id");
+      response->addHeader("Access-Control-Allow-Origin", "*");
+      request->send(response);
+      return;
+    }
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", prefs.getString(raw_id, ""));
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    request->send(response);
+  });
+
+  server.on("/config/transform", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("id") || !request->hasParam("value", true)) {
+      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "missing id/value");
+      response->addHeader("Access-Control-Allow-Origin", "*");
+      request->send(response);
+      return;
+    }
+    const char *raw_id = request->getParam("id")->value().c_str();
+    const char *raw_value = request->getParam("value", true)->value().c_str();
+
+    int id;
+    if (sscanf(raw_id, "transform%d", &id) != 1) {
+      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "bad id");
+      response->addHeader("Access-Control-Allow-Origin", "*");
+      request->send(response);
+      return;
+    }
+
+    prefs.putString(raw_id, raw_value);
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", "ok");
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    request->send(response);
+  });
+
   server.onNotFound([](AsyncWebServerRequest *request) {
     request->send(404, "text/plain", "Not found");
   });
@@ -109,14 +156,14 @@ bool send_request(uint8_t destination, packet_type type) {
 }
 
 void loop() {
-  int sensor_id = 0;
-  if (send_request(10 + sensor_id, data)) {
-    sensor_data[sensor_id].status = pkt_rx.data.status;
-    memcpy(&sensor_data[sensor_id].target_status, &pkt_rx.data.target_status, sizeof(sensor_data[sensor_id].target_status));
-    memcpy(&sensor_data[sensor_id].distance, &pkt_rx.data.distances, sizeof(sensor_data[sensor_id].distance));
-  } else {
-    ESP_LOGI(TAG, "timeout");
-    sensor_data[sensor_id].status = timeout;
+  for (int sensor_id = 0; sensor_id < 3; sensor_id++) {
+    if (send_request(10 + sensor_id, data)) {
+      sensor_data[sensor_id].status = pkt_rx.data.status;
+      memcpy(&sensor_data[sensor_id].target_status, &pkt_rx.data.target_status, sizeof(sensor_data[sensor_id].target_status));
+      memcpy(&sensor_data[sensor_id].distance, &pkt_rx.data.distances, sizeof(sensor_data[sensor_id].distance));
+    } else {
+      sensor_data[sensor_id].status = timeout;
+    }
   }
 
   delay(100);
