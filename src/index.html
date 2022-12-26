@@ -61,7 +61,7 @@
               8
             );
 
-          const res = await fetch(HOST + `/config/transform?id=transform${id}`);
+          const res = await fetch(HOST + `/config/string?key=transform${id}`);
           const data = await res.text();
           document.querySelector(`#transform${id}`).value = data;
           document.querySelector(`#display-table${id}`).style.transform = data;
@@ -75,7 +75,7 @@
 
       function save_transform(id) {
         const val = document.querySelector(`#transform${id}`).value;
-        fetch(HOST + `/config/transform?id=transform${id}`, {
+        fetch(HOST + `/config/string?key=transform${id}`, {
           method: "POST",
           body: `value=${val}`,
           headers: {

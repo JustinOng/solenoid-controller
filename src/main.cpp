@@ -90,47 +90,32 @@ void setup() {
     request->send(response);
   });
 
-  server.on("/config/transform", HTTP_GET, [](AsyncWebServerRequest *request) {
-    if (!request->hasParam("id")) {
-      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "missing id");
-      response->addHeader("Access-Control-Allow-Origin", "*");
-      request->send(response);
-      return;
-    }
-    const char *raw_id = request->getParam("id")->value().c_str();
-
-    int id;
-    if (sscanf(raw_id, "transform%d", &id) != 1) {
-      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "bad id");
+  server.on("/config/string", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("key")) {
+      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "missing key");
       response->addHeader("Access-Control-Allow-Origin", "*");
       request->send(response);
       return;
     }
 
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", prefs.getString(raw_id, ""));
+    const char *key = request->getParam("key")->value().c_str();
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", prefs.getString(key, ""));
     response->addHeader("Access-Control-Allow-Origin", "*");
     request->send(response);
   });
 
-  server.on("/config/transform", HTTP_POST, [](AsyncWebServerRequest *request) {
-    if (!request->hasParam("id") || !request->hasParam("value", true)) {
-      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "missing id/value");
+  server.on("/config/string", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("key") || !request->hasParam("value", true)) {
+      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "missing key/value");
       response->addHeader("Access-Control-Allow-Origin", "*");
       request->send(response);
       return;
     }
-    const char *raw_id = request->getParam("id")->value().c_str();
-    const char *raw_value = request->getParam("value", true)->value().c_str();
+    const char *key = request->getParam("key")->value().c_str();
+    const char *value = request->getParam("value", true)->value().c_str();
 
-    int id;
-    if (sscanf(raw_id, "transform%d", &id) != 1) {
-      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "bad id");
-      response->addHeader("Access-Control-Allow-Origin", "*");
-      request->send(response);
-      return;
-    }
-
-    prefs.putString(raw_id, raw_value);
+    prefs.putString(key, value);
 
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", "ok");
     response->addHeader("Access-Control-Allow-Origin", "*");
