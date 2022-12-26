@@ -29,6 +29,9 @@ void execute_pulse(pulse_t &pulse) {
 
   ESP_LOGI(TAG, "Executing pulse of %.2fms on pin %d", pulse.ms, pulse.pin);
   ESP_ERROR_CHECK(rmt_write_items(RMT_CHANNEL_0, &item, 1, true));
+
+  // Detach GPIO pin from the RMT channel
+  gpio_matrix_out(pulse.pin, SIG_GPIO_OUT_IDX, false, false);
 }
 
 void pulse_task(void *arg) {
