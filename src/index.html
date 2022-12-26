@@ -61,8 +61,7 @@
               8
             );
 
-          const res = await fetch(HOST + `/config/string?key=transform${id}`);
-          const data = await res.text();
+          const data = await get_string(`transform${id}`);
           document.querySelector(`#transform${id}`).value = data;
           document.querySelector(`#display-table${id}`).style.transform = data;
         }
@@ -73,11 +72,16 @@
         document.querySelector(`#display-table${id}`).style.transform = val;
       }
 
-      function save_transform(id) {
-        const val = document.querySelector(`#transform${id}`).value;
-        fetch(HOST + `/config/string?key=transform${id}`, {
+      async function get_string(key) {
+        const res = await fetch(HOST + `/config/string?key=${key}`);
+        const data = await res.text();
+        return data;
+      }
+
+      async function put_string(key, value) {
+        return fetch(HOST + `/config/string?key=${key}`, {
           method: "POST",
-          body: `value=${val}`,
+          body: `value=${value}`,
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
@@ -108,7 +112,11 @@
           id="transform0"
           type="text"
           onkeyup="update_transform(0)"
-        /><input type="button" value="S" onclick="save_transform(0)" />
+        /><input
+          type="button"
+          value="S"
+          onclick="put_string('transform0', this.previousSibling.value)"
+        />
       </div>
       <div>
         transform1:
@@ -116,7 +124,11 @@
           id="transform1"
           type="text"
           onkeyup="update_transform(1)"
-        /><input type="button" value="S" onclick="save_transform(1)" />
+        /><input
+          type="button"
+          value="S"
+          onclick="put_string('transform1', this.previousSibling.value)"
+        />
       </div>
       <div>
         transform2:
@@ -124,7 +136,11 @@
           id="transform2"
           type="text"
           onkeyup="update_transform(2)"
-        /><input type="button" value="S" onclick="save_transform(2)" />
+        /><input
+          type="button"
+          value="S"
+          onclick="put_string('transform2', this.previousSibling.value)"
+        />
       </div>
     </div>
   </body>
