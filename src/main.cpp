@@ -9,6 +9,7 @@
 #include "index_html.h"
 #include "packets.h"
 #include "pins.h"
+#include "pulse.h"
 #include "uart.h"
 
 const char *TAG = "main";
@@ -34,6 +35,7 @@ void setup() {
 
   prefs.begin("prefs", false);
 
+  xTaskCreate(pulse_task, "pulse", 8192, nullptr, 9, nullptr);
   xTaskCreate(uart_task, "uart", 8192, nullptr, 10, nullptr);
 
   WiFi.mode(WIFI_STA);
@@ -129,6 +131,41 @@ void setup() {
     }
 
     prefs.putString(raw_id, raw_value);
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", "ok");
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    request->send(response);
+  });
+
+  server.on("/bell", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("id") || !request->hasParam("ms")) {
+      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "missing id/ms");
+      response->addHeader("Access-Control-Allow-Origin", "*");
+      request->send(response);
+      return;
+    }
+
+    const char *raw_id = request->getParam("id")->value().c_str();
+    const char *raw_ms = request->getParam("ms")->value().c_str();
+
+    int id;
+    float ms;
+
+    if (sscanf(raw_id, "%d", &id) != 1) {
+      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "bad id");
+      response->addHeader("Access-Control-Allow-Origin", "*");
+      request->send(response);
+      return;
+    }
+
+    if (sscanf(raw_ms, "%f", &ms) != 1) {
+      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "bad ms");
+      response->addHeader("Access-Control-Allow-Origin", "*");
+      request->send(response);
+      return;
+    }
+
+    pulse_add(PIN_SOLENOID[id], ms);
 
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", "ok");
     response->addHeader("Access-Control-Allow-Origin", "*");
