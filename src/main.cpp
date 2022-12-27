@@ -29,6 +29,17 @@ Preferences prefs;
 
 AsyncWebServer server(80);
 
+void bell_loop_task(void *arg) {
+  while (1) {
+    for (int i = 0; i < 12; i++) {
+      float pulse_width = prefs.getFloat("loop_ms", 5);
+      pulse_add(PIN_SOLENOID[i], pulse_width);
+
+      delay(prefs.getInt("loop_delay", 500));
+    }
+  }
+}
+
 void send_response(AsyncWebServerRequest *request, int code, const char *content) {
   AsyncWebServerResponse *response = request->beginResponse(code, "text/plain", content);
   response->addHeader("Access-Control-Allow-Origin", "*");
@@ -43,6 +54,8 @@ void setup() {
 
   xTaskCreate(pulse_task, "pulse", 8192, nullptr, 9, nullptr);
   xTaskCreate(uart_task, "uart", 8192, nullptr, 10, nullptr);
+
+  xTaskCreate(bell_loop_task, "bell", 8192, nullptr, 5, nullptr);
 
   WiFi.mode(WIFI_STA);
   ESP_LOGI(TAG, "Trying to connect to %s...", WIFI_SSID);
