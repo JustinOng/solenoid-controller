@@ -5,8 +5,8 @@ constexpr int PIN_INT = 39;
 constexpr int PIN_SDA = 40;
 constexpr int PIN_SCL = 41;
 
-constexpr int PIN_TXD = 1;
-constexpr int PIN_RXD = 2;
+constexpr int PIN_TXD = 19;
+constexpr int PIN_RXD = 20;
 
 constexpr int UART_NUM = 1;
 constexpr int UART_BAUD = 115200;
