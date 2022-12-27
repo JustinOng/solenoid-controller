@@ -27,6 +27,13 @@ typedef struct {
 
 sensor_data_t sensor_data[3];
 
+typedef struct __attribute__((packed)) {
+  int16_t cell;
+  int16_t distance_threshold;
+} trigger_t;
+
+trigger_t triggers[12][8];
+
 Preferences prefs;
 
 AsyncWebServer server(80);
@@ -208,6 +215,50 @@ void setup() {
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", "ok");
     response->addHeader("Access-Control-Allow-Origin", "*");
     request->send(response);
+  });
+
+  server.on("/config/trigger", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("id") || !request->hasParam("triggers")) {
+      send_response(request, 400, "missing id/triggers");
+      return;
+    }
+
+    const char *raw_id = request->getParam("id")->value().c_str();
+    const char *raw_triggers = request->getParam("triggers")->value().c_str();
+
+    int id;
+
+    if (sscanf(raw_id, "%d", &id) != 1) {
+      send_response(request, 400, "bad id");
+      return;
+    }
+
+    if (id < 0 || id >= 12) {
+      send_response(request, 400, "invalid id");
+      return;
+    }
+
+    trigger_t new_triggers[8];
+
+    int offset = 0;
+    for (int i = 0; i < 8; i++) {
+      int a, b;
+      int read = 0;
+      if (sscanf(raw_triggers + offset, "%d,%d,%n", &a, &b, &read) != 2) {
+        send_response(request, 400, "bad triggers");
+        return;
+      }
+
+      offset += read;
+
+      new_triggers[i].cell = a;
+      new_triggers[i].distance_threshold = b;
+
+      ESP_LOGI(TAG, "trigger %d: %d %d", i, a, b);
+    }
+
+    memcpy(&triggers[id], &new_triggers, sizeof(new_triggers));
+    send_response(request, 200, "ok");
   });
 
   server.on("/bell", HTTP_POST, [](AsyncWebServerRequest *request) {
