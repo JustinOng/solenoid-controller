@@ -29,6 +29,12 @@ Preferences prefs;
 
 AsyncWebServer server(80);
 
+void send_response(AsyncWebServerRequest *request, int code, const char *content) {
+  AsyncWebServerResponse *response = request->beginResponse(code, "text/plain", content);
+  response->addHeader("Access-Control-Allow-Origin", "*");
+  request->send(response);
+}
+
 void setup() {
   data_rx = xSemaphoreCreateBinary();
   assert(data_rx != nullptr);
@@ -58,18 +64,14 @@ void setup() {
 
   server.on("/sensor", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (!request->hasParam("sensor")) {
-      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "missing sensor");
-      response->addHeader("Access-Control-Allow-Origin", "*");
-      request->send(response);
+      send_response(request, 400, "missing sensor");
       return;
     }
     const char *_sensor = request->getParam("sensor")->value().c_str();
 
     int sensor_id;
     if (sscanf(_sensor, "%d", &sensor_id) != 1) {
-      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "bad sensor");
-      response->addHeader("Access-Control-Allow-Origin", "*");
-      request->send(response);
+      send_response(request, 400, "bad sensor");
       return;
     }
 
@@ -92,9 +94,7 @@ void setup() {
 
   server.on("/config/string", HTTP_GET, [](AsyncWebServerRequest *request) {
     if (!request->hasParam("key")) {
-      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "missing key");
-      response->addHeader("Access-Control-Allow-Origin", "*");
-      request->send(response);
+      send_response(request, 400, "missing key");
       return;
     }
 
@@ -107,11 +107,10 @@ void setup() {
 
   server.on("/config/string", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (!request->hasParam("key") || !request->hasParam("value", true)) {
-      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "missing key/value");
-      response->addHeader("Access-Control-Allow-Origin", "*");
-      request->send(response);
+      send_response(request, 400, "missing key/value");
       return;
     }
+
     const char *key = request->getParam("key")->value().c_str();
     const char *value = request->getParam("value", true)->value().c_str();
 
@@ -122,11 +121,83 @@ void setup() {
     request->send(response);
   });
 
+  server.on("/config/int", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("key")) {
+      send_response(request, 400, "missing key");
+      return;
+    }
+
+    const char *key = request->getParam("key")->value().c_str();
+
+    char buf[32];
+
+    snprintf(buf, sizeof(buf), "%d", prefs.getInt(key, 0));
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buf);
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    request->send(response);
+  });
+
+  server.on("/config/int", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("key") || !request->hasParam("value", true)) {
+      send_response(request, 400, "missing key/value");
+      return;
+    }
+    const char *key = request->getParam("key")->value().c_str();
+    const char *raw_value = request->getParam("value", true)->value().c_str();
+
+    int value;
+    if (sscanf(raw_value, "%d", &value) != 1) {
+      send_response(request, 400, "bad value");
+    }
+
+    prefs.putInt(key, value);
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", "ok");
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    request->send(response);
+  });
+
+  server.on("/config/float", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("key")) {
+      send_response(request, 400, "missing key");
+      return;
+    }
+
+    const char *key = request->getParam("key")->value().c_str();
+
+    char buf[32];
+
+    snprintf(buf, sizeof(buf), "%f", prefs.getFloat(key, 0));
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", buf);
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    request->send(response);
+  });
+
+  server.on("/config/float", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("key") || !request->hasParam("value", true)) {
+      send_response(request, 400, "missing key/value");
+      return;
+    }
+    const char *key = request->getParam("key")->value().c_str();
+    const char *raw_value = request->getParam("value", true)->value().c_str();
+
+    float value;
+    if (sscanf(raw_value, "%f", &value) != 1) {
+      send_response(request, 400, "bad value");
+    }
+
+    prefs.putFloat(key, value);
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", "ok");
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    request->send(response);
+  });
+
   server.on("/bell", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (!request->hasParam("id") || !request->hasParam("ms")) {
-      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "missing id/ms");
-      response->addHeader("Access-Control-Allow-Origin", "*");
-      request->send(response);
+      send_response(request, 400, "missing id/ms");
       return;
     }
 
@@ -137,16 +208,17 @@ void setup() {
     float ms;
 
     if (sscanf(raw_id, "%d", &id) != 1) {
-      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "bad id");
-      response->addHeader("Access-Control-Allow-Origin", "*");
-      request->send(response);
+      send_response(request, 400, "bad id");
+      return;
+    }
+
+    if (id < 0 || id >= 12) {
+      send_response(request, 400, "invalid id");
       return;
     }
 
     if (sscanf(raw_ms, "%f", &ms) != 1) {
-      AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "bad ms");
-      response->addHeader("Access-Control-Allow-Origin", "*");
-      request->send(response);
+      send_response(request, 400, "bad ms");
       return;
     }
 
