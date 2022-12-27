@@ -1,8 +1,10 @@
 #include <Arduino.h>
+#include <AsyncElegantOTA.h>
 #include <ESPAsyncWebServer.h>
 #include <ESPmDNS.h>
 #include <Preferences.h>
 
+#include "Update.h"  // Somehow fixes failure to find "Update.h" in AsyncElegantOTA
 #include "credentials.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -246,6 +248,7 @@ void setup() {
     request->send(404, "text/plain", "Not found");
   });
 
+  AsyncElegantOTA.begin(&server);
   server.begin();
 }
 
