@@ -19,29 +19,31 @@ const char *TAG = "main";
 const char *WIFI_AP_SSID = "main";
 const char *WIFI_AP_PASSWORD = "outbound";
 
+constexpr int SOLENOID_COUNT = 12;
+constexpr int SENSOR_COUNT = 4;
+constexpr int TRIGGER_COUNT = 8;
+
 typedef struct {
   uint8_t status;
   uint8_t target_status[64];
   int16_t distance[64];
 } sensor_data_t;
 
-sensor_data_t sensor_data[3];
+sensor_data_t sensor_data[SENSOR_COUNT];
 
 typedef struct __attribute__((packed)) {
   int16_t cell;
   int16_t distance_threshold;
 } trigger_t;
 
-trigger_t triggers[12][8];
+trigger_t triggers[SOLENOID_COUNT][TRIGGER_COUNT];
 
 typedef struct __attribute__((packed)) {
   float loop;
   float triggered;
 } pulse_widths_t;
 
-pulse_widths_t pulses[12];
-
-constexpr int SENSOR_COUNT = 4;
+pulse_widths_t pulses[SOLENOID_COUNT];
 
 Preferences prefs;
 
@@ -49,7 +51,7 @@ AsyncWebServer server(80);
 
 void bell_loop_task(void *arg) {
   while (1) {
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < SOLENOID_COUNT; i++) {
       pulse_add(PIN_SOLENOID[i], pulses[i].loop);
 
       delay(prefs.getInt("loop_delay", 500));
@@ -234,7 +236,7 @@ void setup() {
 
     buf[len++] = '[';
 
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < SOLENOID_COUNT; i++) {
       len += snprintf(buf + len, sizeof(buf) - len, "[%f,%f],", pulses[i].loop, pulses[i].triggered);
     }
 
@@ -254,10 +256,10 @@ void setup() {
 
     const char *raw_pulses = request->getParam("pulses")->value().c_str();
 
-    pulse_widths_t new_pulses[12];
+    pulse_widths_t new_pulses[SOLENOID_COUNT];
 
     int offset = 0;
-    for (int i = 0; i < 12; i++) {
+    for (int i = 0; i < SOLENOID_COUNT; i++) {
       float a, b;
       int read = 0;
       if (sscanf(raw_pulses + offset, "%f,%f,%n", &a, &b, &read) != 2) {
@@ -286,7 +288,7 @@ void setup() {
 
     int id;
 
-    if (sscanf(raw_id, "%d", &id) != 1 || id < 0 || id >= 12) {
+    if (sscanf(raw_id, "%d", &id) != 1 || id < 0 || id >= SOLENOID_COUNT) {
       send_response(request, 400, "bad id");
       return;
     }
@@ -296,7 +298,7 @@ void setup() {
 
     buf[len++] = '[';
 
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < TRIGGER_COUNT; i++) {
       len += snprintf(buf + len, sizeof(buf) - len, "[%d,%d],", triggers[id][i].cell, triggers[id][i].distance_threshold);
     }
 
@@ -324,15 +326,15 @@ void setup() {
       return;
     }
 
-    if (id < 0 || id >= 12) {
+    if (id < 0 || id >= SOLENOID_COUNT) {
       send_response(request, 400, "invalid id");
       return;
     }
 
-    trigger_t new_triggers[8];
+    trigger_t new_triggers[TRIGGER_COUNT];
 
     int offset = 0;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < TRIGGER_COUNT; i++) {
       int a, b;
       int read = 0;
       if (sscanf(raw_triggers + offset, "%d,%d,%n", &a, &b, &read) != 2) {
@@ -369,7 +371,7 @@ void setup() {
       return;
     }
 
-    if (id < 0 || id >= 12) {
+    if (id < 0 || id >= SOLENOID_COUNT) {
       send_response(request, 400, "invalid id");
       return;
     }
@@ -407,6 +409,10 @@ bool send_request(uint8_t destination, packet_type type) {
   return xSemaphoreTake(data_rx, pdMS_TO_TICKS(REQUEST_TIMEOUT)) == pdTRUE;
 }
 
+inline bool sensor_valid(uint8_t status) {
+  return status == 5 || status == 6 || status == 9;
+}
+
 void loop() {
   for (int sensor_id = 0; sensor_id < SENSOR_COUNT; sensor_id++) {
     if (send_request(10 + sensor_id, data)) {
@@ -415,6 +421,27 @@ void loop() {
       memcpy(&sensor_data[sensor_id].distance, &pkt_rx.data.distances, sizeof(sensor_data[sensor_id].distance));
     } else {
       sensor_data[sensor_id].status = timeout;
+    }
+  }
+
+  for (int i = 0; i < SOLENOID_COUNT; i++) {
+    for (int u = 0; u < TRIGGER_COUNT; u++) {
+      trigger_t &trigger = triggers[i][u];
+
+      if (trigger.cell < 0) continue;
+
+      int sensor_id = trigger.cell / 100;
+      int cell = trigger.cell % 100;
+
+      if (sensor_data[sensor_id].status != active) continue;
+      if (!sensor_valid(sensor_data[sensor_id].target_status[cell])) continue;
+
+      if (sensor_data[sensor_id].distance[cell] < trigger.distance_threshold) {
+        // One of the triggers have seen a target, create a pulse
+        pulse_add(PIN_SOLENOID[i], pulses[i].triggered);
+
+        break;
+      }
     }
   }
 
