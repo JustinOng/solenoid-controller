@@ -52,6 +52,10 @@ AsyncWebServer server(80);
 void bell_loop_task(void *arg) {
   while (1) {
     for (int i = 0; i < SOLENOID_COUNT; i++) {
+      while (!prefs.getInt("loop_en", 0)) {
+        delay(1000);
+      }
+
       pulse_add(PIN_SOLENOID[i], pulses[i].loop);
 
       delay(prefs.getInt("loop_delay", 500));

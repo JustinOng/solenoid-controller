@@ -142,6 +142,16 @@
 
           document.querySelector("#thresholds-container").appendChild(e);
         }
+
+        {
+          const data = get_config("int", "loop_en");
+
+          if (parseInt(data, 10)) {
+            document.querySelector("loop_en").checked = true;
+          } else {
+            document.querySelector("loop_en").checked = false;
+          }
+        }
       };
 
       function update_transform(id) {
@@ -191,6 +201,10 @@
             method: "POST",
           }
         );
+      }
+
+      async function set_loop_en(en) {
+        const res = await put_config("int", "loop_en", en ? 1 : 0);
       }
     </script>
   </head>
@@ -253,6 +267,8 @@
         value="S"
         onclick="put_config('int', 'loop_delay', this.previousSibling.value)"
       />
+      Loop enabled:
+      <input type="checkbox" id="loop_en" onclick="set_loop_en(this.checked)" />
       Trigger interval (ms, int):
       <input type="number" id="trig_interval" /><input
         type="button"
