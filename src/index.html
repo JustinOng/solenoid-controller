@@ -21,6 +21,17 @@
       #transform-config-container input[type="text"] {
         flex-grow: 1;
       }
+
+      #pulses-container {
+        display: flex;
+        flex-direction: row;
+      }
+
+      #pulses-container > div {
+        display: flex;
+        flex-direction: column;
+        width: 100px;
+      }
     </style>
     <script>
       const HOST = localStorage.getItem("host") || "";
@@ -67,16 +78,27 @@
           const data = await get_config("string", `transform${id}`);
           document.querySelector(`#transform${id}`).value = data;
           document.querySelector(`#display-table${id}`).style.transform = data;
-
-          document.querySelector("#loop_ms").value = await get_config(
-            "float",
-            "loop_ms"
-          );
-
           document.querySelector("#loop_delay").value = await get_config(
             "int",
             "loop_delay"
           );
+        }
+
+        for (let i = 0; i < 12; i++) {
+          document.querySelector("#pulses-container").innerHTML += `<div>
+          Solenoid ${i}
+          <div>L<input type="number" min="0" max="32.7" step="0.1" /></div>
+          <div>T<input type="number" min="0" max="32.7" step="0.1" /></div>
+        </div>`;
+        }
+
+        const res = await fetch(HOST + "/config/pulses");
+        const data = await res.json();
+
+        for (const [i, ele] of Array.from(
+          document.querySelectorAll("#pulses-container input")
+        ).entries()) {
+          ele.value = data[Math.floor(i / 2)][i % 2];
         }
       };
 
@@ -102,6 +124,18 @@
       }
 
       setInterval(render, 200);
+
+      async function save_pulses() {
+        let out = "";
+
+        for (const e of document.querySelectorAll("#pulses-container input")) {
+          out += `${e.value},`;
+        }
+
+        const res = await fetch(HOST + `/config/pulses?pulses=${out}`, {
+          method: "POST",
+        });
+      }
     </script>
   </head>
   <body>
@@ -158,21 +192,17 @@
     </div>
 
     <div>
+      Loop Delay (ms, int): <input type="number" id="loop_delay" /><input
+        type="button"
+        value="S"
+        onclick="put_config('int', 'loop_delay', this.previousSibling.value)"
+      />
+    </div>
+    <div>
       <div>
-        Loop Delay (ms, int): <input type="number" id="loop_delay" /><input
-          type="button"
-          value="S"
-          onclick="put_config('int', 'loop_delay', this.previousSibling.value)"
-        />
+        Pulse widths:<input type="button" value="S" onclick="save_pulses()" />
       </div>
-      <div>
-        Loop Pulse Width (ms, float):
-        <input type="number" id="loop_ms" /><input
-          type="button"
-          value="S"
-          onclick="put_config('float', 'loop_ms', this.previousSibling.value)"
-        />
-      </div>
+      <div id="pulses-container"></div>
     </div>
   </body>
 </html>

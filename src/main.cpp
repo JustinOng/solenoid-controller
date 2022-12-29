@@ -34,6 +34,13 @@ typedef struct __attribute__((packed)) {
 
 trigger_t triggers[12][8];
 
+typedef struct __attribute__((packed)) {
+  float loop;
+  float triggered;
+} pulse_widths_t;
+
+pulse_widths_t pulses[12];
+
 Preferences prefs;
 
 AsyncWebServer server(80);
@@ -41,8 +48,7 @@ AsyncWebServer server(80);
 void bell_loop_task(void *arg) {
   while (1) {
     for (int i = 0; i < 12; i++) {
-      float pulse_width = prefs.getFloat("loop_ms", 5);
-      pulse_add(PIN_SOLENOID[i], pulse_width);
+      pulse_add(PIN_SOLENOID[i], pulses[i].loop);
 
       delay(prefs.getInt("loop_delay", 500));
     }
@@ -60,6 +66,8 @@ void setup() {
   assert(data_rx != nullptr);
 
   prefs.begin("prefs", false);
+
+  prefs.getBytes("pulses", &pulses, sizeof(pulses));
 
   xTaskCreate(pulse_task, "pulse", 8192, nullptr, 9, nullptr);
   xTaskCreate(uart_task, "uart", 8192, nullptr, 10, nullptr);
@@ -215,6 +223,54 @@ void setup() {
     AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", "ok");
     response->addHeader("Access-Control-Allow-Origin", "*");
     request->send(response);
+  });
+
+  server.on("/config/pulses", HTTP_GET, [](AsyncWebServerRequest *request) {
+    char buf[1024];
+    uint16_t len = 0;
+
+    buf[len++] = '[';
+
+    for (int i = 0; i < 12; i++) {
+      len += snprintf(buf + len, sizeof(buf) - len, "[%f,%f],", pulses[i].loop, pulses[i].triggered);
+    }
+
+    // Replace last , with ]
+    buf[len - 1] = ']';
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "application/json", buf);
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    request->send(response);
+  });
+
+  server.on("/config/pulses", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("pulses")) {
+      send_response(request, 400, "missing pulses");
+      return;
+    }
+
+    const char *raw_pulses = request->getParam("pulses")->value().c_str();
+
+    pulse_widths_t new_pulses[12];
+
+    int offset = 0;
+    for (int i = 0; i < 12; i++) {
+      float a, b;
+      int read = 0;
+      if (sscanf(raw_pulses + offset, "%f,%f,%n", &a, &b, &read) != 2) {
+        send_response(request, 400, "bad pulses");
+        return;
+      }
+
+      offset += read;
+
+      new_pulses[i].loop = a;
+      new_pulses[i].triggered = b;
+    }
+
+    memcpy(&pulses, &new_pulses, sizeof(pulses));
+    prefs.putBytes("pulses", &pulses, sizeof(pulses));
+    send_response(request, 200, "ok");
   });
 
   server.on("/config/trigger", HTTP_POST, [](AsyncWebServerRequest *request) {
