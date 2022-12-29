@@ -46,12 +46,13 @@
       }
     </style>
     <script>
+      const SENSOR_COUNT = 4;
       const HOST = localStorage.getItem("host") || "";
 
       async function render() {
         let statuses = [];
 
-        for (let id = 0; id < 3; id++) {
+        for (let id = 0; id < SENSOR_COUNT; id++) {
           const sensor_url = HOST + `/sensor?sensor=${id}`;
           const data = await (await fetch(sensor_url)).json();
 
@@ -81,7 +82,7 @@
       }
 
       window.onload = async () => {
-        for (let id = 0; id < 3; id++) {
+        for (let id = 0; id < SENSOR_COUNT; id++) {
           document.querySelector(`#display-table${id} tbody`).innerHTML +=
             "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>".repeat(
               8

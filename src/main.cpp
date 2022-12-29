@@ -41,6 +41,8 @@ typedef struct __attribute__((packed)) {
 
 pulse_widths_t pulses[12];
 
+constexpr int SENSOR_COUNT = 4;
+
 Preferences prefs;
 
 AsyncWebServer server(80);
@@ -101,7 +103,7 @@ void setup() {
     const char *_sensor = request->getParam("sensor")->value().c_str();
 
     int sensor_id;
-    if (sscanf(_sensor, "%d", &sensor_id) != 1) {
+    if (sscanf(_sensor, "%d", &sensor_id) != 1 || sensor_id < 0 || sensor_id >= SENSOR_COUNT) {
       send_response(request, 400, "bad sensor");
       return;
     }
@@ -406,7 +408,7 @@ bool send_request(uint8_t destination, packet_type type) {
 }
 
 void loop() {
-  for (int sensor_id = 0; sensor_id < 3; sensor_id++) {
+  for (int sensor_id = 0; sensor_id < SENSOR_COUNT; sensor_id++) {
     if (send_request(10 + sensor_id, data)) {
       sensor_data[sensor_id].status = pkt_rx.data.status;
       memcpy(&sensor_data[sensor_id].target_status, &pkt_rx.data.target_status, sizeof(sensor_data[sensor_id].target_status));
