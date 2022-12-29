@@ -274,7 +274,39 @@ void setup() {
     send_response(request, 200, "ok");
   });
 
-  server.on("/config/trigger", HTTP_POST, [](AsyncWebServerRequest *request) {
+  server.on("/config/triggers", HTTP_GET, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("id")) {
+      send_response(request, 400, "missing id");
+      return;
+    }
+
+    const char *raw_id = request->getParam("id")->value().c_str();
+
+    int id;
+
+    if (sscanf(raw_id, "%d", &id) != 1 || id < 0 || id >= 12) {
+      send_response(request, 400, "bad id");
+      return;
+    }
+
+    char buf[1024];
+    uint16_t len = 0;
+
+    buf[len++] = '[';
+
+    for (int i = 0; i < 8; i++) {
+      len += snprintf(buf + len, sizeof(buf) - len, "[%d,%d],", triggers[id][i].cell, triggers[id][i].distance_threshold);
+    }
+
+    // Replace last , with ]
+    buf[len - 1] = ']';
+
+    AsyncWebServerResponse *response = request->beginResponse(200, "application/json", buf);
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    request->send(response);
+  });
+
+  server.on("/config/triggers", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (!request->hasParam("id") || !request->hasParam("triggers")) {
       send_response(request, 400, "missing id/triggers");
       return;

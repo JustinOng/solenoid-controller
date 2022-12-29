@@ -32,6 +32,18 @@
         flex-direction: column;
         width: 100px;
       }
+
+      .threshold {
+        display: flex;
+        flex-direction: column;
+        width: 100px;
+      }
+
+      .threshold-row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+      }
     </style>
     <script>
       const HOST = localStorage.getItem("host") || "";
@@ -100,6 +112,31 @@
         ).entries()) {
           ele.value = data[Math.floor(i / 2)][i % 2];
         }
+
+        for (let i = 0; i < 12; i++) {
+          const THRESHOLD_COUNT = 8;
+          const e = document.createElement("div");
+          e.className = "threshold-row";
+          e.innerHTML = `
+          <div class="threshold-row">
+            <div>${i}:<br/><input type="button" value="S" onclick="save_thresholds(${i}, this.parentElement.parentElement)" /></div>
+            <div>Cell: <br />Threshold:</div>
+              ${'<div class="threshold"><input type="number" /> <input type="number" /></div>'.repeat(
+                THRESHOLD_COUNT
+              )}
+          </div>`;
+
+          const res = await fetch(HOST + `/config/triggers?id=${i}`);
+          const data = await res.json();
+
+          for (const [i, u] of e
+            .querySelectorAll("input[type='number']")
+            .entries()) {
+            u.value = data[Math.floor(i / 2)][i % 2];
+          }
+
+          document.querySelector("#thresholds-container").appendChild(e);
+        }
       };
 
       function update_transform(id) {
@@ -135,6 +172,20 @@
         const res = await fetch(HOST + `/config/pulses?pulses=${out}`, {
           method: "POST",
         });
+      }
+
+      async function save_thresholds(i, ele) {
+        let out = "";
+        for (const e of ele.querySelectorAll("input[type='number']")) {
+          out += `${e.value},`;
+        }
+
+        const res = await fetch(
+          HOST + `/config/triggers?id=${i}&triggers=${out}`,
+          {
+            method: "POST",
+          }
+        );
       }
     </script>
   </head>
@@ -203,6 +254,10 @@
         Pulse widths:<input type="button" value="S" onclick="save_pulses()" />
       </div>
       <div id="pulses-container"></div>
+    </div>
+    <div>
+      <div>Thresholds:</div>
+      <div id="thresholds-container"></div>
     </div>
   </body>
 </html>
