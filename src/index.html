@@ -95,6 +95,10 @@
             "int",
             "loop_delay"
           );
+          document.querySelector("#trig_interval").value = await get_config(
+            "int",
+            "trig_interval"
+          );
         }
 
         for (let i = 0; i < 12; i++) {
@@ -248,6 +252,12 @@
         type="button"
         value="S"
         onclick="put_config('int', 'loop_delay', this.previousSibling.value)"
+      />
+      Trigger interval (ms, int):
+      <input type="number" id="trig_interval" /><input
+        type="button"
+        value="S"
+        onclick="put_config('int', 'trig_interval', this.previousSibling.value)"
       />
     </div>
     <div>

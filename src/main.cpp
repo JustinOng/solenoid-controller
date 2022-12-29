@@ -424,6 +424,8 @@ void loop() {
     }
   }
 
+  static uint32_t last_trigger[SOLENOID_COUNT] = {0};
+
   for (int i = 0; i < SOLENOID_COUNT; i++) {
     for (int u = 0; u < TRIGGER_COUNT; u++) {
       trigger_t &trigger = triggers[i][u];
@@ -438,7 +440,11 @@ void loop() {
 
       if (sensor_data[sensor_id].distance[cell] < trigger.distance_threshold) {
         // One of the triggers have seen a target, create a pulse
-        pulse_add(PIN_SOLENOID[i], pulses[i].triggered);
+
+        if (millis() - last_trigger[i] > prefs.getInt("trig_interval", 1000)) {
+          pulse_add(PIN_SOLENOID[i], pulses[i].triggered);
+          last_trigger[i] = millis();
+        }
 
         break;
       }
