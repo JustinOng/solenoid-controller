@@ -17,7 +17,7 @@
 const char *TAG = "main";
 
 const char *WIFI_AP_SSID = "main";
-const char *WIFI_AP_PASSWORD = "outbound operable zips";
+const char *WIFI_AP_PASSWORD = "outbound";
 
 typedef struct {
   uint8_t status;
@@ -80,6 +80,7 @@ void setup() {
 
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
     ESP_LOGW(TAG, "WiFi connection failed!");
+    WiFi.disconnect();
     ESP_LOGI(TAG, "Starting AP %s", WIFI_AP_SSID);
     WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASSWORD);
   }
