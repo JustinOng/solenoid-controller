@@ -48,6 +48,7 @@ pulse_widths_t pulses[SOLENOID_COUNT];
 Preferences prefs;
 
 AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
 
 void bell_loop_task(void *arg) {
   while (1) {
@@ -397,6 +398,8 @@ void setup() {
   });
 
   AsyncElegantOTA.begin(&server);
+
+  server.addHandler(&ws);
   server.begin();
 }
 
@@ -446,6 +449,7 @@ void loop() {
         // One of the triggers have seen a target, create a pulse
 
         if (millis() - last_trigger[i] > prefs.getInt("trig_interval", 1000)) {
+          ws.printfAll("Trigger solenoid %d from cell %d < threshold %d", i, cell, trigger.distance_threshold);
           pulse_add(PIN_SOLENOID[i], pulses[i].triggered);
           last_trigger[i] = millis();
         }

@@ -49,6 +49,15 @@
       const SENSOR_COUNT = 4;
       const HOST = localStorage.getItem("host") || "";
 
+      const ws = new WebSocket("/ws");
+      ws.onopen = () => {
+        console.log("Logging socket open");
+      };
+
+      ws.onmessage = (evt) => {
+        console.log(event.data);
+      };
+
       async function render() {
         let statuses = [];
 
