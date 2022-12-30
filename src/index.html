@@ -163,7 +163,6 @@
 
         {
           const data = await get_config("int", "loop_en");
-          console.log(data);
 
           if (parseInt(data, 10)) {
             document.querySelector("#loop_en").checked = true;
