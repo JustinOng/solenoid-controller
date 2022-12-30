@@ -156,14 +156,17 @@
         }
 
         {
-          const data = get_config("int", "loop_en");
+          const data = await get_config("int", "loop_en");
+          console.log(data);
 
           if (parseInt(data, 10)) {
-            document.querySelector("loop_en").checked = true;
+            document.querySelector("#loop_en").checked = true;
           } else {
-            document.querySelector("loop_en").checked = false;
+            document.querySelector("#loop_en").checked = false;
           }
         }
+
+        setInterval(render, 500);
       };
 
       function update_transform(id) {
@@ -186,8 +189,6 @@
           },
         });
       }
-
-      setInterval(render, 200);
 
       async function save_pulses() {
         let out = "";
