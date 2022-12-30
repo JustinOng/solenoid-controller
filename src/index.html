@@ -229,15 +229,22 @@
   </head>
   <body>
     Status: <span id="status"></span>
-    <table id="display-table0" class="display-table">
-      <tbody></tbody>
-    </table>
-    <table id="display-table1" class="display-table">
-      <tbody></tbody>
-    </table>
-    <table id="display-table2" class="display-table">
-      <tbody></tbody>
-    </table>
+    <div style="display: flex; flex-direction: row">
+      <table id="display-table0" class="display-table">
+        <tbody></tbody>
+      </table>
+      <table id="display-table1" class="display-table">
+        <tbody></tbody>
+      </table>
+    </div>
+    <div style="display: flex; flex-direction: row">
+      <table id="display-table2" class="display-table">
+        <tbody></tbody>
+      </table>
+      <table id="display-table3" class="display-table">
+        <tbody></tbody>
+      </table>
+    </div>
     <div
       style="display: flex; flex-direction: row"
       id="transform-config-container"
@@ -272,6 +279,18 @@
           id="transform2"
           type="text"
           onkeyup="update_transform(2)"
+        /><input
+          type="button"
+          value="S"
+          onclick="put_config('string', 'transform2', this.previousSibling.value)"
+        />
+      </div>
+      <div>
+        transform3:
+        <input
+          id="transform3"
+          type="text"
+          onkeyup="update_transform(3)"
         /><input
           type="button"
           value="S"
