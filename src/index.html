@@ -76,9 +76,12 @@
           statuses.push(STATUS_MAP[status] || "ERROR");
 
           const cells = document.querySelectorAll(`#display-table${id} td`);
+
           for (const [i, zone] of data.entries()) {
             const [target_status, distance] = zone;
-            cells[i].innerHTML = `${i}<br/>${distance}<br/>(${target_status})`;
+            cells[i].innerHTML = `${
+              id * 100 + i
+            }<br/>${distance}<br/>(${target_status})`;
 
             const MAX_DISTANCE = 3000;
             const c = (distance / MAX_DISTANCE) * 255;
