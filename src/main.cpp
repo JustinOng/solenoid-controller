@@ -78,6 +78,12 @@ void setup() {
 
   prefs.getBytes("pulses", &pulses, sizeof(pulses));
 
+  for (int id = 0; id < SOLENOID_COUNT; id++) {
+    char key[15];
+    snprintf(key, sizeof(key), "trigger%d", id);
+    prefs.getBytes(key, &triggers[id], sizeof(triggers[id]));
+  }
+
   xTaskCreate(pulse_task, "pulse", 8192, nullptr, 9, nullptr);
   xTaskCreate(uart_task, "uart", 8192, nullptr, 10, nullptr);
 
@@ -351,11 +357,14 @@ void setup() {
 
       new_triggers[i].cell = a;
       new_triggers[i].distance_threshold = b;
-
-      ESP_LOGI(TAG, "trigger %d: %d %d", i, a, b);
     }
 
     memcpy(&triggers[id], &new_triggers, sizeof(new_triggers));
+
+    char key[15];
+    snprintf(key, sizeof(key), "trigger%d", id);
+    prefs.putBytes(key, &triggers[id], sizeof(new_triggers));
+
     send_response(request, 200, "ok");
   });
 
