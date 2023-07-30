@@ -57,6 +57,9 @@
         ws.onopen = () => {
           console.log("Logging socket open");
         };
+        ws.onmessage = (evt) => {
+          console.log(evt.data);
+        };
       } catch (e) {
         console.error(e);
       }
