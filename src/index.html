@@ -104,7 +104,7 @@
             );
 
           const data = await get_config("string", `transform${id}`);
-          document.querySelector(`#transform${id}`).value = data;
+          // document.querySelector(`#transform${id}`).value = data;
           document.querySelector(`#display-table${id}`).style.transform = data;
           document.querySelector("#loop_delay").value = await get_config(
             "int",
@@ -241,7 +241,7 @@
         <tbody></tbody>
       </table>
     </div>
-    <div
+    <!-- <div
       style="display: flex; flex-direction: row"
       id="transform-config-container"
     >
@@ -293,7 +293,7 @@
           onclick="put_config('string', 'transform2', this.previousSibling.value)"
         />
       </div>
-    </div>
+    </div> -->
 
     <div>
       Loop Delay (ms, int): <input type="number" id="loop_delay" /><input
