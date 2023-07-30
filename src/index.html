@@ -224,6 +224,13 @@
       async function set_loop_en(en) {
         const res = await put_config("int", "loop_en", en ? 1 : 0);
       }
+
+      function trigger_bell() {
+        const id = document.querySelector("#trigger-bell-id").value;
+        const pulse = document.querySelector("#trigger-bell-pulse").value;
+
+        fetch(HOST + `/bell?id=${id}&ms=${pulse}`, { method: "POST" });
+      }
     </script>
   </head>
   <body>
@@ -243,6 +250,15 @@
       <table id="display-table3" class="display-table">
         <tbody></tbody>
       </table>
+    </div>
+    <div>
+      Trigger Bell id:
+      <input id="trigger-bell-id" min="0" max="11" value="0" /> Pulse
+      length(ms): <input id="trigger-bell-pulse" value="10" /><button
+        onclick="trigger_bell()"
+      >
+        Trigger
+      </button>
     </div>
     <!-- <div
       style="display: flex; flex-direction: row"
