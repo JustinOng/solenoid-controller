@@ -9,7 +9,7 @@ constexpr int PIN_TXD = 19;
 constexpr int PIN_RXD = 20;
 
 constexpr int UART_NUM = 1;
-constexpr int UART_BAUD = 115200;
+constexpr int UART_BAUD = 921600;
 constexpr int UART_RX_BUFFER_LEN = 256;
 constexpr int UART_RX_PAT_CHR = 0xA5;
 constexpr int UART_RX_PAT_COUNT = 4;
