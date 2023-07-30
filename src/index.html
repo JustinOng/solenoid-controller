@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <style>
@@ -55,10 +56,6 @@
         );
         ws.onopen = () => {
           console.log("Logging socket open");
-        };
-
-        ws.onmessage = (evt) => {
-          console.log(event.data);
         };
       } catch (e) {
         console.error(e);
